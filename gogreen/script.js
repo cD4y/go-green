@@ -96,7 +96,7 @@ function setTimeMode(mode){
   fwState.timeMode=mode;
   const date=$('#fDate');if(date)date.value='';
   $$('.time-mode').forEach(b=>b.classList.toggle('active',b.dataset.mode===mode));
-  renderWatch();
+  loadHotspots();
 }
 function renderWatch(){
   const k=$('#fCat').value,period=activePeriod();
@@ -117,7 +117,7 @@ function renderWatch(){
     b.onclick=()=>{if(map){$('#map').scrollIntoView({block:'center'});map.setView([h.lat,h.lng],11);mk[h.id]?.openPopup()}else openM('Hotspot detail',h.w)};
     li.append(b);ul.append(li);
     if(layer){
-      const m=L.circleMarker([h.lat,h.lng],{radius:2.8,color:COL[h.k],fillColor:COL[h.k],fillOpacity:.9,weight:1}).addTo(layer);
+      const m=L.circleMarker([h.lat,h.lng],{radius:2.2,color:COL[h.k],fillColor:COL[h.k],fillOpacity:.9,weight:0.8}).addTo(layer);
       const p=el('div','', 'fw-popup');
       p.append(el('b',`Hotspot · ${h.k}`),el('div',`Lampung · ${h.d} ${h.timeUtc||''} UTC`),el('div',`Confidence: ${h.sourceConfidence}`),el('div',`Satellite: ${h.satellite}`),el('div',`Instrument: ${h.instrument}`),el('div',`FRP: ${Number.isFinite(h.frp)?h.frp+' MW':'—'}`),el('div',`Day/Night: ${h.daynight}`),el('div',`Version: ${h.version}`),el('div',h.w));
       m.bindPopup(p);
@@ -129,17 +129,29 @@ function renderWatch(){
 
 async function loadHotspots(){
   if(fwState.loading)return;
-  fwState.loading=true;fwState.error=null;setWatchState('Loading NASA FIRMS hotspot data…');
+  fwState.loading=true;fwState.error=null;
+  const selected=$('#fDate')?.value||'';
+  const mode=selected?'date':fwState.timeMode;
+  const label=mode==='date'?`NASA FIRMS data for ${selected}`:mode==='today'?'NASA FIRMS data for TODAY':mode==='24h'?'NASA FIRMS data for the last 24 hours':'NASA FIRMS data for the last 7 days';
+  setWatchState(`Loading ${label}…`);
   const ul=$('#hotList');ul.replaceChildren(el('li','Loading hotspot data…'));
   try{
-    const r=await fetch(`${FIRMS_API}?days=7`,{headers:{Accept:'application/json'},cache:'no-store'});
+    const params=new URLSearchParams({mode});
+    if(mode==='date')params.set('date',selected);
+    const r=await fetch(`${FIRMS_API}?${params.toString()}`,{headers:{Accept:'application/json'},cache:'no-store'});
     const d=await r.json().catch(()=>({}));
-    if(!r.ok)throw new Error(d.error||`NASA FIRMS request failed (${r.status})`);
+    if(!r.ok){
+      const e=new Error(d.error||`NASA FIRMS request failed (${r.status})`);
+      if(d.nasaMessage)e.nasaMessage=d.nasaMessage;
+      throw e;
+    }
     if(!Array.isArray(d.data))throw new Error('Invalid hotspot response structure.');
     H=d.data.map(normalizeHotspot).filter(Boolean);
     fwState.lastUpdated=d.meta?.retrievedAt?new Date(d.meta.retrievedAt).toLocaleString('en-GB',{dateStyle:'medium',timeStyle:'short'}):new Date().toLocaleString('en-GB',{dateStyle:'medium',timeStyle:'short'});
     fwState.latestDetection=d.meta?.latestDetectionUtc||null;
-    setWatchState(`Live NASA FIRMS data · ${H.length} valid hotspot records · S-NPP + NOAA-20 + NOAA-21 · retrieved ${fwState.lastUpdated} · confidence shown as LOW / MEDIUM / HIGH`);
+    const sourceLabel=mode==='date'?'NASA FIRMS historical data': 'NASA FIRMS NRT · S-NPP + NOAA-20 + NOAA-21';
+    const unavailable=Array.isArray(d.meta?.unavailableSensors)&&d.meta.unavailableSensors.length?` · unavailable: ${d.meta.unavailableSensors.join(', ')}`:'';
+    setWatchState(`${sourceLabel} · ${H.length} valid hotspot records · retrieved ${fwState.lastUpdated}${unavailable} · confidence shown as LOW / MEDIUM / HIGH`);
     renderWatch();
     if(map && H.length){
       const bounds=L.latLngBounds(H.map(h=>[h.lat,h.lng]));
@@ -147,15 +159,28 @@ async function loadHotspots(){
     }
     if(fwState.mapError)setWatchState(fwState.mapError,'error');
   }catch(e){
-    H=[];fwState.error=e.message||'Unknown error';fwState.latestDetection=null;setWatchState(`NASA FIRMS unavailable: ${fwState.error}`,'error');renderWatch();
+    H=[];fwState.error=e.message||'Unknown error';fwState.latestDetection=null;
+    const detail=e.nasaMessage?` ${e.nasaMessage}`:'';
+    setWatchState(`NASA FIRMS unavailable: ${fwState.error}${detail}`,'error');renderWatch();
   }finally{fwState.loading=false}
 }
 
 $('#filters').addEventListener('submit',e=>e.preventDefault());
-['change','input'].forEach(e=>$('#filters').addEventListener(e,renderWatch));
+$('#fCat').addEventListener('change',renderWatch);
 $$('.time-mode').forEach(b=>b.addEventListener('click',()=>setTimeMode(b.dataset.mode)));
-$('#fDate').addEventListener('change',()=>{if($('#fDate').value){fwState.timeMode='date';$$('.time-mode').forEach(b=>b.classList.remove('active'));renderWatch();}});
-$('#filters').addEventListener('reset',()=>setTimeout(()=>{fwState.timeMode='7d';$('#fDate').value='';$$('.time-mode').forEach(b=>b.classList.toggle('active',b.dataset.mode==='7d'));renderWatch()},0));
+$('#fDate').max=todayUtcDate();
+$('#fDate').addEventListener('change',()=>{
+  const value=$('#fDate').value;
+  if(!value){setTimeMode('7d');return;}
+  fwState.timeMode='date';
+  $$('.time-mode').forEach(b=>b.classList.remove('active'));
+  loadHotspots();
+});
+$('#filters').addEventListener('reset',()=>setTimeout(()=>{
+  fwState.timeMode='7d';$('#fDate').value='';$('#fCat').value='';
+  $$('.time-mode').forEach(b=>b.classList.toggle('active',b.dataset.mode==='7d'));
+  loadHotspots();
+},0));
 const retry=el('button','Retry','btn ghost dark');retry.type='button';retry.onclick=loadHotspots;retry.style.marginTop='8px';$('#watchStatus')?.parentElement?.append(retry);
 loadHotspots();
 /* ECOREPORT */

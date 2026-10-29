@@ -30,7 +30,7 @@ function parseCsv(text) {
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
-  const key = process.env.FIRMS_MAP_KEY;
+  const key = String(process.env.FIRMS_MAP_KEY || '').trim().replace(/^['"]|['"]$/g, '');
   if (!key) return res.status(500).json({ error: 'FIRMS_MAP_KEY is not configured on the server.' });
 
   const days = 3;
@@ -43,10 +43,29 @@ export default async function handler(req, res) {
   try {
     const response = await fetch(url, { signal: controller.signal, headers: { Accept: 'text/csv' } });
     const text = await response.text();
-    if (!response.ok) return res.status(response.status).json({ error: `NASA FIRMS returned HTTP ${response.status}.` });
+    if (!response.ok) {
+      const nasaMessage = text.trim().replace(/\s+/g, ' ').slice(0, 500);
+      return res.status(response.status).json({
+        error: `NASA FIRMS returned HTTP ${response.status}.`,
+        nasaMessage: nasaMessage || 'NASA FIRMS did not provide an error message.'
+      });
+    }
 
     const raw = parseCsv(text);
-    const requiredHeaders = ['latitude', 'longitude', 'acq_date', 'acq_time', 'confidence', 'satellite', 'instrument', 'frp', 'daynight'];
+    if (!raw.length) {
+      const retrievedAt = new Date().toISOString();
+      res.setHeader('Cache-Control', 's-maxage=600, stale-while-revalidate=300');
+      return res.status(200).json({
+        region: 'Lampung', source, days, data: [],
+        meta: {
+          retrievedAt, latestDetectionUtc: null, rawRecords: 0, validRecords: 0,
+          bbox: LAMPUNG_BBOX,
+          confidenceScheme: 'VIIRS categorical: l=low, n=nominal, h=high',
+          note: 'NASA FIRMS hotspot detections are thermal anomaly indicators, not confirmed fires.'
+        }
+      });
+    }
+    const requiredHeaders = ['latitude','longitude','acq_date','acq_time','confidence','satellite','instrument','frp','daynight'];
     const missingHeaders = requiredHeaders.filter(h => !Object.prototype.hasOwnProperty.call(raw[0] || {}, h));
     if (missingHeaders.length) {
       return res.status(502).json({
@@ -58,11 +77,12 @@ export default async function handler(req, res) {
     const data = raw.filter(row => {
       const lat = Number(row.latitude), lng = Number(row.longitude);
       const confidence = String(row.confidence || '').trim().toLowerCase();
-      const validConfidence = ['l', 'n', 'h', 'low', 'nominal', 'high'].includes(confidence);
+      const validConfidence = ['l','n','h','low','nominal','high'].includes(confidence);
       return Number.isFinite(lat) && Number.isFinite(lng) &&
         lat >= -6.2 && lat <= -3.7 && lng >= 103.5 && lng <= 106.1 &&
         /^\d{4}-\d{2}-\d{2}$/.test(row.acq_date || '') &&
-        /^\d{3,4}$/.test(String(row.acq_time || '').trim()) &&
+        /^\d{1,4}$/.test(String(row.acq_time || '').trim()) &&
+        Number(String(row.acq_time || '').trim()) >= 0 && Number(String(row.acq_time || '').trim()) <= 2359 &&
         validConfidence;
     }).map(row => ({
       ...row,

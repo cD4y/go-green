@@ -97,8 +97,8 @@ function renderWatch(){
     b.onclick=()=>{if(map){$('#map').scrollIntoView({block:'center'});map.setView([h.lat,h.lng],11);mk[h.id]?.openPopup()}else openM('Hotspot detail',h.w)};
     li.append(b);ul.append(li);
     if(layer){
-      const m=L.circleMarker([h.lat,h.lng],{radius:7,color:COL[h.k],fillColor:COL[h.k],fillOpacity:.75,weight:2}).addTo(layer);
-      const p=el('div');
+      const m=L.circleMarker([h.lat,h.lng],{radius:5,color:COL[h.k],fillColor:COL[h.k],fillOpacity:.82,weight:1.5}).addTo(layer);
+      const p=el('div','', 'fw-popup');
       p.append(el('b',`Hotspot · ${h.k}`),el('div',`Lampung · ${h.d} ${h.timeUtc||''} UTC`),el('div',`Confidence FIRMS: ${h.sourceConfidence}`),el('div',`Satellite: ${h.satellite}`),el('div',`Instrument: ${h.instrument}`),el('div',`FRP: ${Number.isFinite(h.frp)?h.frp+' MW':'—'}`),el('div',`Day/Night: ${h.daynight}`),el('div',`Version: ${h.version}`),el('div',h.w));
       m.bindPopup(p);
       m.on('click',()=>{
@@ -114,15 +114,19 @@ async function loadHotspots(){
   fwState.loading=true;fwState.error=null;setWatchState('Loading NASA FIRMS hotspot data…');
   const ul=$('#hotList');ul.replaceChildren(el('li','Loading hotspot data…'));
   try{
-    const r=await fetch(`${FIRMS_API}?days=3`,{headers:{Accept:'application/json'},cache:'no-store'});
+    const r=await fetch(`${FIRMS_API}?days=7`,{headers:{Accept:'application/json'},cache:'no-store'});
     const d=await r.json().catch(()=>({}));
     if(!r.ok)throw new Error(d.error||`NASA FIRMS request failed (${r.status})`);
     if(!Array.isArray(d.data))throw new Error('Invalid hotspot response structure.');
     H=d.data.map(normalizeHotspot).filter(Boolean);
     fwState.lastUpdated=d.meta?.retrievedAt?new Date(d.meta.retrievedAt).toLocaleString('en-GB',{dateStyle:'medium',timeStyle:'short'}):new Date().toLocaleString('en-GB',{dateStyle:'medium',timeStyle:'short'});
     fwState.latestDetection=d.meta?.latestDetectionUtc||null;
-    setWatchState(`Live NASA FIRMS data · ${H.length} valid hotspot records · retrieved ${fwState.lastUpdated} · confidence uses NASA FIRMS classes: LOW / NOMINAL / HIGH`);
+    setWatchState(`Live NASA FIRMS data · ${H.length} valid hotspot records · 7-day window · S-NPP + NOAA-20 + NOAA-21 · retrieved ${fwState.lastUpdated} · confidence uses NASA FIRMS classes: LOW / NOMINAL / HIGH`);
     renderWatch();
+    if(map && H.length){
+      const bounds=L.latLngBounds(H.map(h=>[h.lat,h.lng]));
+      if(bounds.isValid()) map.fitBounds(bounds,{padding:[24,24],maxZoom:9});
+    }
     if(fwState.mapError)setWatchState(fwState.mapError,'error');
   }catch(e){
     H=[];fwState.error=e.message||'Unknown error';fwState.latestDetection=null;setWatchState(`NASA FIRMS unavailable: ${fwState.error}`,'error');renderWatch();
@@ -181,7 +185,7 @@ const KB=[
 {k:['smoke','asap','haze','kabut','air quality','udara','masker','mask'],en:'😷 In heavy smoke: stay indoors with windows closed, limit outdoor activity, use a well-fitted mask (N95/KN95 type), and follow local health advice.',id:'😷 Saat asap tebal: tetap di dalam ruangan, tutup jendela, batasi aktivitas luar, gunakan masker yang pas (jenis N95/KN95), dan ikuti arahan kesehatan setempat.'},
 {k:['waste','sampah','plastic','plastik','recycle','daur'],en:'♻️ Reduce first, then reuse, then recycle. Carry a bottle and bag, separate waste, and never burn trash.',id:'♻️ Kurangi dulu, lalu pakai ulang, lalu daur ulang. Bawa botol dan tas sendiri, pilah sampah, dan jangan bakar sampah.'},
 {k:['tree','pohon','plant','tanam','reforestation','restorasi'],en:'🌱 Plant native species, protect saplings, and keep caring for them afterwards. Try the Tree Care Tracker in EcoImpact.',id:'🌱 Tanam spesies asli, lindungi bibit, dan terus rawat. Coba Tree Care Tracker di EcoImpact.'},
-{k:['website','navigate','menu','feature','fitur','forestwatch','about'],en:'🧭 GO GREEN has ForestWatch (NASA FIRMS hotspot map), EcoBot (me), EcoReport, Green Action, and EcoImpact. Use the top menu to jump between them.',id:'🧭 GO GREEN punya ForestWatch (peta contoh), EcoBot (saya), EcoReport, Green Action, dan EcoImpact. Gunakan menu atas untuk berpindah.'},
+{k:['website','navigate','menu','feature','fitur','forestwatch','about'],en:'🧭 GO GREEN has ForestWatch (NASA FIRMS hotspot map), EcoBot (me), EcoReport, Green Action, and EcoImpact. Use the top menu to jump between them.',id:'🧭 GO GREEN punya ForestWatch (NASA FIRMS), EcoBot (saya), EcoReport, Green Action, dan EcoImpact. Gunakan menu atas untuk berpindah.'},
 {k:['hello','hi','halo','hai','selamat'],en:'Hello, Green Guardian! 🌱 Ask me about forests, fires, wildlife, or sustainable living.',id:'Halo, Green Guardian! 🌱 Tanyakan tentang hutan, kebakaran, satwa, atau hidup berkelanjutan.'}];
 const ID_RE=/\b(apa|bagaimana|cara|kenapa|mengapa|hutan|yang|dan|saya|bisa|untuk|tolong|sampah|lapor|kebakaran|hewan|bahaya|rencana|dengan|itu|ini|di|ke)\b/i;
 const reply=q=>{const t=q.toLowerCase(),id=ID_RE.test(t);let best=null,sc=0;KB.forEach(e=>{const s=e.k.reduce((a,w)=>a+(t.includes(w)?1:0),0);if(s>sc){sc=s;best=e}});

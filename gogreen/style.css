@@ -79,3 +79,21 @@ section{padding:80px 24px}section>h2,section>.sub,.alt>h2,.alt>.sub{text-align:c
 .card.im img{width:100%;height:200px;object-fit:cover;display:block}.card.im .bd{padding:18px 22px 24px;display:flex;flex-direction:column;gap:8px;flex:1}.card.im .btn{align-self:flex-start;margin-top:auto}
 footer{border-radius:30px;margin-top:14px}
 @media(max-width:860px){.intro{grid-template-columns:1fr;gap:30px}.qbar{flex-direction:column;border-radius:28px;align-items:stretch}.hero{min-height:88vh}#menu{border-radius:22px;box-shadow:0 10px 24px #0002}}
+
+/* ForestWatch refinements — same design, denser map presentation */
+#watch{font-size:.94rem}
+#watch h2{font-size:clamp(1.55rem,3.5vw,2.25rem)}
+#watch .sub{font-size:.92rem}
+#watch .tag{font-size:.74rem}
+#watch .stats div{padding:11px}
+#watch .stats b{font-size:1.4rem}
+#watch .stats span{font-size:.78rem}
+#watch .filters label{font-size:.84rem}
+#watch .filters input,#watch .filters select{font-size:.86rem;padding:8px 10px}
+#watch .list{font-size:.86rem}
+#watch .list li{padding:8px 11px}
+#watch .list li button{font-size:.78rem;padding:3px 10px}
+#watch #map{height:460px}
+#watch .leaflet-popup-content{font-size:.78rem;line-height:1.42}
+#watch .leaflet-popup-content b{font-size:.82rem}
+@media(max-width:860px){#watch #map{height:340px}}

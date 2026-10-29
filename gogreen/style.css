@@ -97,3 +97,23 @@ footer{border-radius:30px;margin-top:14px}
 #watch .leaflet-popup-content{font-size:.78rem;line-height:1.42}
 #watch .leaflet-popup-content b{font-size:.82rem}
 @media(max-width:860px){#watch #map{height:340px}}
+
+/* ForestWatch NASA-style time controls — preserves the existing GO GREEN visual system */
+#watch .nasa-filters{display:flex;align-items:center;gap:10px;padding:4px 0 12px}
+#watch .time-modes{display:flex;gap:8px;align-items:center}
+#watch .time-mode{width:58px;height:40px;border:0;border-radius:999px;background:#e4e4e4;color:#465047;font-size:.68rem;font-weight:700;cursor:pointer;transition:.15s}
+#watch .time-mode:hover{transform:translateY(-1px);background:#d8ddd8}
+#watch .time-mode.active{background:#1689c7;color:#fff;box-shadow:0 3px 10px #1689c744}
+#watch .category-filter,#watch .date-filter{margin:0;min-width:150px;font-size:.76rem}
+#watch .category-filter select,#watch .date-filter input{height:40px;margin-top:3px;padding:7px 10px;font-size:.8rem;border-radius:10px}
+#watch .date-filter{min-width:170px}
+#watch .nasa-filters>.btn{height:40px;padding:7px 18px;font-size:.78rem}
+#watch .leaflet-marker-icon{image-rendering:auto}
+#watch .leaflet-popup-content{font-size:.74rem;line-height:1.38}
+#watch .leaflet-popup-content b{font-size:.8rem}
+#watch .list li{font-size:.82rem}
+@media(max-width:860px){
+  #watch .nasa-filters{flex-wrap:wrap}
+  #watch .time-modes{width:100%;justify-content:flex-start}
+  #watch .category-filter,#watch .date-filter{flex:1;min-width:140px}
+}

@@ -21,14 +21,12 @@ cards('#crisisCards',CR,'Learn More',['fire','bio','smoke']);cards('#learnCards'
 $('#srcs').append(...[['Ministry of Forestry (KLHK)','https://www.menlhk.go.id'],['BNPB','https://bnpb.go.id'],['BMKG','https://www.bmkg.go.id'],['Global Forest Watch','https://www.globalforestwatch.org'],['UNEP','https://www.unep.org'],['NASA Earth','https://earth.gov']].map(([n,u])=>{const l=el('li'),a=el('a',n);a.href=u;a.target='_blank';a.rel='noopener noreferrer';l.append(a);return l}));
 /* FORESTWATCH — NASA FIRMS */
 let H=[];
-const COL={HIGH:'#C84C42',NOMINAL:'#E98235',LOW:'#E9B635'};
+const COL={HIGH:'#C84C42',MEDIUM:'#E98235',LOW:'#E9B635'};
 let map,layer,mk={};
-let fwState={loading:false,error:null,lastUpdated:null,latestDetection:null,mapError:null};
+let fwState={loading:false,error:null,lastUpdated:null,latestDetection:null,mapError:null,timeMode:'7d'};
 
 const FIRMS_API='/api/hotspots';
 const LAMPUNG_VIEW=[-4.9,105.2];
-
-$('#fRegion').append(...["","Lampung"].map(r=>{const o=el('option',r||'All');o.value=r;return o}));
 
 try{
   if(!window.L)throw new Error('Leaflet unavailable');
@@ -49,7 +47,7 @@ try{
 function normalizeConfidence(v){
   const x=String(v??'').trim().toLowerCase();
   if(x==='h'||x==='high')return 'HIGH';
-  if(x==='n'||x==='nominal')return 'NOMINAL';
+  if(x==='n'||x==='nominal')return 'MEDIUM';
   if(x==='l'||x==='low')return 'LOW';
   return null;
 }
@@ -64,7 +62,7 @@ function normalizeHotspot(row,i){
   const id=[d,row.acq_time,row.latitude,row.longitude,row.satellite||row.instrument||'',i].join('_');
   const rawTime=String(row.acq_time??'').trim().padStart(4,'0');
   const timeUtc=rawTime.length===4?`${rawTime.slice(0,2)}:${rawTime.slice(2)}`:'—';
-  return {id,n:'Hotspot '+(i+1),r:'Lampung',d,c:null,k:conf,sourceConfidence:String(row.confidence??'—').toUpperCase(),lat,lng,frp:Number.isFinite(Number(row.frp))?Number(row.frp):null,satellite:String(row.satellite||'—'),instrument:String(row.instrument||'—'),daynight:String(row.daynight||'—'),version:String(row.version||'—'),timeUtc,w:'Hotspot adalah indikasi anomali termal dari pengamatan satelit, bukan konfirmasi kebakaran.'};
+  return {id,n:'Hotspot '+(i+1),r:'Lampung',d,c:null,k:conf,sourceConfidence:normalizeConfidence(row.confidence)||'—',lat,lng,frp:Number.isFinite(Number(row.frp))?Number(row.frp):null,satellite:String(row.satellite||'—'),instrument:String(row.instrument||'—'),daynight:String(row.daynight||'—'),version:String(row.version||'—'),timeUtc,w:'Hotspot adalah indikasi anomali termal dari pengamatan satelit, bukan konfirmasi kebakaran.'};
 }
 
 function setWatchState(text,kind='info'){
@@ -74,22 +72,44 @@ function setWatchState(text,kind='info'){
   tag.className='tag '+(kind==='error'?'warn':'');
 }
 
+function todayUtcDate(){return new Date().toISOString().slice(0,10)}
+function detectionDateTime(h){
+  const raw=String(h.d||'')+'T'+String(h.timeUtc||'00:00').padStart(5,'0')+':00Z';
+  const dt=new Date(raw);
+  return Number.isNaN(dt.getTime())?null:dt;
+}
+function dateMinusDaysLocal(date,days){
+  const d=new Date(`${date}T00:00:00Z`);d.setUTCDate(d.getUTCDate()-days);return d.toISOString().slice(0,10);
+}
+function activePeriod(){
+  const now=new Date(),today=todayUtcDate(),selected=$('#fDate')?.value||'';
+  if(selected)return {label:`date ${selected}`,test:h=>h.d===selected};
+  if(fwState.timeMode==='today')return {label:`today ${today}`,test:h=>h.d===today};
+  if(fwState.timeMode==='24h'){
+    const cutoff=new Date(now.getTime()-24*60*60*1000);
+    return {label:'last 24 hours',test:h=>{const dt=detectionDateTime(h);return dt&&dt>=cutoff&&dt<=now;}};
+  }
+  const from=dateMinusDaysLocal(today,6);
+  return {label:'last 7 days',test:h=>h.d>=from&&h.d<=today};
+}
+function setTimeMode(mode){
+  fwState.timeMode=mode;
+  const date=$('#fDate');if(date)date.value='';
+  $$('.time-mode').forEach(b=>b.classList.toggle('active',b.dataset.mode===mode));
+  renderWatch();
+}
 function renderWatch(){
-  const r=$('#fRegion').value,k=$('#fCat').value,f=$('#fFrom').value,t=$('#fTo').value;
-  const D=H.filter(h=>(!r||h.r===r)&&(!k||h.k===k)&&(!f||h.d>=f)&&(!t||h.d<=t));
-  const invalidRange=Boolean(f&&t&&f>t);
-  const filterLabel=[r&&`region ${r}`,k&&`confidence ${k}`,f&&`from ${f}`,t&&`to ${t}`].filter(Boolean).join(', ');
-  const filterNote=filterLabel?` · filtered by ${filterLabel}`:'';
-  const dist=['HIGH','NOMINAL','LOW'].map(c=>c[0]+':'+D.filter(h=>h.k===c).length).join(' ');
+  const k=$('#fCat').value,period=activePeriod();
+  const D=H.filter(h=>(!k||h.k===k)&&period.test(h));
+  const filterLabel=[k&&`category ${k.toLowerCase()}`,period.label].filter(Boolean).join(' · ');
+  const filterNote=filterLabel?` · ${filterLabel}`:'';
+  const dist=[['HIGH','H'],['MEDIUM','M'],['LOW','L']].map(([c,l])=>`${l}:${D.filter(h=>h.k===c).length}`).join(' ');
   $('#stats').replaceChildren(
-    ...[['Hotspots',D.length],['Regions represented',D.length?'Lampung':'—'],['Confidence (H/N/L)',dist],['NASA retrieval',fwState.lastUpdated||'—'],['Latest detection (UTC)',fwState.latestDetection||'—']].map(([l,v])=>{const d=el('div');d.append(el('b',v),el('span',l));return d})
+    ...[['Hotspots',D.length],['Coverage','Lampung'],['Confidence (H/M/L)',dist],['NASA retrieval',fwState.lastUpdated||'—'],['Latest detection (UTC)',fwState.latestDetection||'—']].map(([l,v])=>{const d=el('div');d.append(el('b',v),el('span',l));return d})
   );
   const ul=$('#hotList');ul.replaceChildren();
-  if(invalidRange)ul.append(el('li','Invalid date range. The From date must be before or equal to the To date.'));
-  else if(!D.length)ul.append(el('li',fwState.error?'No hotspot data available. Use Retry after checking the connection.':(H.length?'No hotspots match these filters.':'NASA FIRMS returned no hotspot records for the selected period.')));
-  if(invalidRange)setWatchState('Invalid date range · From must be before or equal to To.','error');
-  else if(D.length===0 && H.length>0 && !fwState.error)setWatchState(`NASA FIRMS data loaded · 0 records match current filters${filterNote}.`,'info');
-  else if(D.length===0 && H.length===0 && !fwState.error)setWatchState('NASA FIRMS data loaded · no hotspot records returned for the selected period.','info');
+  if(!D.length)ul.append(el('li',fwState.error?'No hotspot data available. Use Retry after checking the connection.':(H.length?`No hotspots match the selected period${k?` and ${k.toLowerCase()} category`:''}.`:'NASA FIRMS returned no hotspot records for the selected period.')));
+  if(D.length===0 && !fwState.error)setWatchState(`NASA FIRMS data loaded · 0 records match current filters${filterNote}.`,'info');
   if(layer){layer.clearLayers();mk={}}
   D.forEach((h,idx)=>{
     const li=el('li'),s=el('span',`Hotspot ${idx+1} · ${h.k}`);li.append(s);
@@ -97,13 +117,11 @@ function renderWatch(){
     b.onclick=()=>{if(map){$('#map').scrollIntoView({block:'center'});map.setView([h.lat,h.lng],11);mk[h.id]?.openPopup()}else openM('Hotspot detail',h.w)};
     li.append(b);ul.append(li);
     if(layer){
-      const m=L.circleMarker([h.lat,h.lng],{radius:5,color:COL[h.k],fillColor:COL[h.k],fillOpacity:.82,weight:1.5}).addTo(layer);
+      const m=L.circleMarker([h.lat,h.lng],{radius:2.8,color:COL[h.k],fillColor:COL[h.k],fillOpacity:.9,weight:1}).addTo(layer);
       const p=el('div','', 'fw-popup');
-      p.append(el('b',`Hotspot · ${h.k}`),el('div',`Lampung · ${h.d} ${h.timeUtc||''} UTC`),el('div',`Confidence FIRMS: ${h.sourceConfidence}`),el('div',`Satellite: ${h.satellite}`),el('div',`Instrument: ${h.instrument}`),el('div',`FRP: ${Number.isFinite(h.frp)?h.frp+' MW':'—'}`),el('div',`Day/Night: ${h.daynight}`),el('div',`Version: ${h.version}`),el('div',h.w));
+      p.append(el('b',`Hotspot · ${h.k}`),el('div',`Lampung · ${h.d} ${h.timeUtc||''} UTC`),el('div',`Confidence: ${h.sourceConfidence}`),el('div',`Satellite: ${h.satellite}`),el('div',`Instrument: ${h.instrument}`),el('div',`FRP: ${Number.isFinite(h.frp)?h.frp+' MW':'—'}`),el('div',`Day/Night: ${h.daynight}`),el('div',`Version: ${h.version}`),el('div',h.w));
       m.bindPopup(p);
-      m.on('click',()=>{
-        [...ul.children].forEach((item,j)=>item.classList.toggle('active',D[j]?.id===h.id));
-      });
+      m.on('click',()=>{[...ul.children].forEach((item,j)=>item.classList.toggle('active',D[j]?.id===h.id));});
       mk[h.id]=m;
     }
   });
@@ -121,7 +139,7 @@ async function loadHotspots(){
     H=d.data.map(normalizeHotspot).filter(Boolean);
     fwState.lastUpdated=d.meta?.retrievedAt?new Date(d.meta.retrievedAt).toLocaleString('en-GB',{dateStyle:'medium',timeStyle:'short'}):new Date().toLocaleString('en-GB',{dateStyle:'medium',timeStyle:'short'});
     fwState.latestDetection=d.meta?.latestDetectionUtc||null;
-    setWatchState(`Live NASA FIRMS data · ${H.length} valid hotspot records · 7-day window · S-NPP + NOAA-20 + NOAA-21 · retrieved ${fwState.lastUpdated} · confidence uses NASA FIRMS classes: LOW / NOMINAL / HIGH`);
+    setWatchState(`Live NASA FIRMS data · ${H.length} valid hotspot records · S-NPP + NOAA-20 + NOAA-21 · retrieved ${fwState.lastUpdated} · confidence shown as LOW / MEDIUM / HIGH`);
     renderWatch();
     if(map && H.length){
       const bounds=L.latLngBounds(H.map(h=>[h.lat,h.lng]));
@@ -135,7 +153,9 @@ async function loadHotspots(){
 
 $('#filters').addEventListener('submit',e=>e.preventDefault());
 ['change','input'].forEach(e=>$('#filters').addEventListener(e,renderWatch));
-$('#filters').addEventListener('reset',()=>setTimeout(renderWatch));
+$$('.time-mode').forEach(b=>b.addEventListener('click',()=>setTimeMode(b.dataset.mode)));
+$('#fDate').addEventListener('change',()=>{if($('#fDate').value){fwState.timeMode='date';$$('.time-mode').forEach(b=>b.classList.remove('active'));renderWatch();}});
+$('#filters').addEventListener('reset',()=>setTimeout(()=>{fwState.timeMode='7d';$('#fDate').value='';$$('.time-mode').forEach(b=>b.classList.toggle('active',b.dataset.mode==='7d'));renderWatch()},0));
 const retry=el('button','Retry','btn ghost dark');retry.type='button';retry.onclick=loadHotspots;retry.style.marginTop='8px';$('#watchStatus')?.parentElement?.append(retry);
 loadHotspots();
 /* ECOREPORT */
@@ -205,4 +225,4 @@ $('#botClear').onclick=()=>{$('#msgs').replaceChildren();welcome()};$('#openBot2
 welcome();chipsFor();
 
 $('#openBot3').onclick=open;
-$('#qbar').onsubmit=e=>{e.preventDefault();$('#fRegion').value=$('#qR').value;$('#fCat').value=$('#qC').value;$('#fRegion').dispatchEvent(new Event('change',{bubbles:true}));$('#watch').scrollIntoView()};
+$('#qbar').onsubmit=e=>{e.preventDefault();$('#fCat').value=$('#qC').value;renderWatch();$('#watch').scrollIntoView()};

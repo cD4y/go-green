@@ -15,7 +15,7 @@
 <p><a class="btn" href="#watch">Explore ForestWatch</a> <a class="btn ghost" href="#action">Start Your Green Journey</a></p>
 <ul class="pills"><li>🌳 Protect Forests</li><li>🦧 Preserve Biodiversity</li><li>♻️ Inspire Green Action</li></ul></div><a class="scroll" href="#crisis" aria-label="Scroll down">⌄</a></section>
 
-<form class="qbar" id="qbar"><label>Region<select id="qR"><option value="">All regions</option><option>Lampung</option></select></label><label>Alert category<select id="qC"><option value="">All categories</option><option>LOW</option><option>NOMINAL</option><option>HIGH</option></select></label><button class="btn dark">Explore hotspots</button></form>
+<form class="qbar" id="qbar"><label>Alert category<select id="qC"><option value="">All categories</option><option>LOW</option><option>MEDIUM</option><option>HIGH</option></select></label><button class="btn dark">Explore hotspots</button></form>
 <section id="welcome" class="intro"><div class="fr"><img src="assets/intro.svg" alt=""><span class="circ">🌿<br>Go Green</span></div><div><h2>Welcome to GO GREEN</h2><p>GO GREEN is a prototype platform that links environmental awareness to action: explore NASA FIRMS hotspot data for Lampung, ask EcoBot, document concerns, build daily habits, and estimate your own contributions.</p><p><a class="btn dark" href="#watch">Explore ForestWatch</a> <button class="link" id="openBot3">Ask EcoBot</button></p></div></section>
 <section id="crisis"><h2>Our Forests Need Us.</h2><p class="sub">Forests sustain biodiversity, regulate the climate, store carbon, and support communities. Forest fires and deforestation can threaten these vital ecosystems.</p>
 <div class="grid3" id="crisisCards"></div></section>
@@ -23,7 +23,7 @@
 <section id="watch" class="alt"><h2>ForestWatch: Monitor Lampung Hotspots.</h2><p class="sub">Explore NASA FIRMS satellite hotspot detections for Lampung and understand how environmental monitoring can support early awareness.</p>
 <p class="tag warn" id="watchStatus">Connecting to NASA FIRMS…</p>
 <div class="stats" id="stats"></div>
-<form class="filters" id="filters"><label>Region <select id="fRegion"></select></label><label>Category <select id="fCat"><option value="">All</option><option>LOW</option><option>NOMINAL</option><option>HIGH</option></select></label><label>From <input type="date" id="fFrom"></label><label>To <input type="date" id="fTo"></label><button type="reset" class="btn ghost dark">Reset</button></form>
+<form class="filters nasa-filters" id="filters"><div class="time-modes" role="group" aria-label="Hotspot time range"><button type="button" class="time-mode" data-mode="today">TODAY</button><button type="button" class="time-mode" data-mode="24h">24 HRS</button><button type="button" class="time-mode active" data-mode="7d">7 DAYS</button></div><label class="category-filter">Category <select id="fCat"><option value="">All</option><option>LOW</option><option>MEDIUM</option><option>HIGH</option></select></label><label class="date-filter">Date <input type="date" id="fDate" aria-label="Choose a date"></label><button type="reset" class="btn ghost dark">Reset</button></form>
 <div class="split"><div id="map" role="application" aria-label="NASA FIRMS hotspot map"></div><ul id="hotList" class="list"></ul></div></section>
 
 <section id="ecobot"><h2>EcoBot AI — Your Environmental Assistant.</h2><p class="sub">Small questions. Greener decisions. Open the chat at the bottom right, or <button class="link" id="openBot2">start chatting</button>.</p></section>

@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>GO GREEN — Protect Our Forest, Secure Our Future</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <a class="skip" href="#home">Skip to content</a>
+    <header id="nav">
+        <nav aria-label="Main">
+            <a class="logo" href="#home">🍃 GO GREEN</a>
+            <button id="burger" aria-label="Menu" aria-expanded="false">☰</button>
+            <ul id="menu">
+                <li><a href="#home">Home</a></li>
+                <li><a href="#crisis">Forest Crisis</a></li>
+                <li><a href="#watch">ForestWatch</a></li>
+                <li><a href="#ecobot" data-bot>EcoBot AI</a></li>
+                <li><a href="#report">EcoReport</a></li>
+                <li><a href="#action">Green Action</a></li>
+                <li><a href="#about">About</a></li>
+                <li><a class="btn" href="#action">Take Action</a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <section id="home" class="hero">
+            <div class="ov"><span class="badge">PROTECT NATURE. INSPIRE CHANGE.</span>
+                <h1>Save Our Forest, Protect Our Future.</h1>
+                <p>Forest fires threaten our ecosystems, wildlife, and communities. Discover the issues, understand the
+                    impact, and take action for a greener Indonesia.</p>
+                <p><a class="btn" href="#watch">Explore ForestWatch</a> <a class="btn ghost" href="#action">Start Your
+                        Green Journey</a></p>
+                <ul class="pills">
+                    <li>🌳 Protect Forests</li>
+                    <li>🦧 Preserve Biodiversity</li>
+                    <li>♻️ Inspire Green Action</li>
+                </ul>
+            </div><a class="scroll" href="#crisis" aria-label="Scroll down">⌄</a>
+        </section>
+
+        <form class="qbar" id="qbar"><label>Region<select id="qR">
+                    <option value="">All regions</option>
+                    <option>Lampung</option>
+                </select></label><label>Alert category<select id="qC">
+                    <option value="">All categories</option>
+                    <option>LOW</option>
+                    <option>NOMINAL</option>
+                    <option>HIGH</option>
+                </select></label><button class="btn dark">Explore hotspots</button></form>
+        <section id="welcome" class="intro">
+            <div class="fr"><img src="assets/intro.svg" alt=""><span class="circ">🌿<br>Go Green</span></div>
+            <div>
+                <h2>Welcome to GO GREEN</h2>
+                <p>GO GREEN is a prototype platform that links environmental awareness to action: explore NASA FIRMS
+                    hotspot data for Lampung, ask EcoBot, document concerns, build daily habits, and estimate your own
+                    contributions.</p>
+                <p><a class="btn dark" href="#watch">Explore ForestWatch</a> <button class="link" id="openBot3">Ask
+                        EcoBot</button></p>
+            </div>
+        </section>
+        <section id="crisis">
+            <h2>Our Forests Need Us.</h2>
+            <p class="sub">Forests sustain biodiversity, regulate the climate, store carbon, and support communities.
+                Forest fires and deforestation can threaten these vital ecosystems.</p>
+            <div class="grid3" id="crisisCards"></div>
+        </section>
+
+        <section id="watch" class="alt">
+            <h2>ForestWatch: Monitor Lampung Hotspots.</h2>
+            <p class="sub">Explore NASA FIRMS satellite hotspot detections for Lampung and understand how environmental
+                monitoring can support early awareness.</p>
+            <p class="tag warn" id="watchStatus">Connecting to NASA FIRMS…</p>
+            <div class="stats" id="stats"></div>
+            <form class="filters" id="filters"><label>Region <select id="fRegion"></select></label><label>Category
+                    <select id="fCat">
+                        <option value="">All</option>
+                        <option>LOW</option>
+                        <option>NOMINAL</option>
+                        <option>HIGH</option>
+                    </select></label><label>From <input type="date" id="fFrom"></label><label>To <input type="date"
+                        id="fTo"></label><button type="reset" class="btn ghost dark">Reset</button></form>
+            <div class="split">
+                <div id="map" role="application" aria-label="NASA FIRMS hotspot map"></div>
+                <ul id="hotList" class="list"></ul>
+            </div>
+        </section>
+
+        <section id="ecobot">
+            <h2>EcoBot AI — Your Environmental Assistant.</h2>
+            <p class="sub">Small questions. Greener decisions. Open the chat at the bottom right, or <button
+                    class="link" id="openBot2">start chatting</button>.</p>
+        </section>
+
+        <section id="report" class="alt">
+            <h2>See a Problem? Help Protect Our Environment.</h2>
+            <p class="sub">Environmental awareness becomes more meaningful when people can document concerns and
+                encourage responsible action.</p>
+            <p class="tag warn">Prototype only: Your report is stored in this browser and is not sent to government
+                authorities or emergency services.</p>
+            <p class="note">⚠️ If you encounter an active fire, stay away from danger and contact the appropriate local
+                emergency services. Do not enter burning forest areas to collect evidence.</p>
+            <div class="split">
+                <form id="rform" novalidate><label>Report title<input id="rTitle" maxlength="80"
+                            required></label><label>Category<select id="rCat" required>
+                            <option value="">Choose…</option>
+                            <option>Suspected Forest Fire</option>
+                            <option>Suspected Illegal Land Clearing</option>
+                            <option>Waste Pollution</option>
+                            <option>Water Pollution</option>
+                            <option>Wildlife or Habitat Concern</option>
+                            <option>Other Environmental Concern</option>
+                        </select></label>
+                    <label>Region / location description<input id="rLoc" maxlength="100" required></label><label>Date
+                        observed<input type="date" id="rDate" required></label>
+                    <label>Description<textarea id="rDesc" rows="4" maxlength="500" required></textarea></label>
+                    <label>Photo (optional, JPG/PNG/WebP, max 2 MB)<input type="file" id="rPhoto"
+                            accept="image/jpeg,image/png,image/webp"></label><img id="prev" alt="Photo preview" hidden>
+                    <label class="chk"><input type="checkbox" id="rOk"> I understand this is a prototype
+                        submission.</label>
+                    <p id="rErr" class="err" role="alert"></p><button class="btn dark" type="submit">Save demo
+                        report</button>
+                </form>
+                <div>
+                    <div class="stats" id="rStats"></div>
+                    <ul class="list" id="rList"></ul><button class="btn ghost dark" id="rClear">Delete all demo
+                        reports</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="action">
+            <h2>Your Daily Actions Matter.</h2>
+            <p class="sub">Small habits can inspire a greener future.</p>
+            <div class="stats" id="aStats"></div>
+            <div class="bar"><i id="aBar"></i></div>
+            <div class="grid3" id="days"></div>
+            <h3>Demo leaderboard <span class="tag">FICTIONAL USERS — sample scores</span></h3>
+            <ol id="lead" class="list"></ol><button class="btn ghost dark" id="aReset">Reset my progress</button>
+        </section>
+
+        <section id="impact" class="alt">
+            <h2>Measure Your Green Impact.</h2>
+            <p class="sub">Understand how everyday choices can contribute to a more sustainable lifestyle.</p>
+            <div class="grid3">
+                <form class="card calc" data-c="plastic">
+                    <h3>Plastic reduction</h3><label>Items avoided per week<input type="number" min="0" step="1"
+                            name="a" required></label><label>Weeks<input type="number" min="0" step="1" name="b"
+                            required></label><button class="btn dark">Calculate</button> <button type="reset"
+                        class="btn ghost dark">Reset</button><output></output>
+                </form>
+                <form class="card calc" data-c="energy">
+                    <h3>Energy saving</h3><label>kWh saved per month<input type="number" min="0" step="0.1" name="a"
+                            required></label><label>Months<input type="number" min="0" step="1" name="b"
+                            required></label><button class="btn dark">Calculate</button> <button type="reset"
+                        class="btn ghost dark">Reset</button><output></output>
+                </form>
+                <form class="card calc" data-c="trees">
+                    <h3>Tree care tracker</h3><label>Trees planted / cared for<input type="number" min="0" step="1"
+                            name="a" required></label><label>Trees still alive (optional)<input type="number" min="0"
+                            step="1" name="b"></label><button class="btn dark">Calculate</button> <button type="reset"
+                        class="btn ghost dark">Reset</button><output></output>
+                </form>
+            </div>
+            <p class="note">Results are self-reported estimates from your inputs. No carbon conversion is applied; tree
+                counts are not verified carbon removal.</p>
+        </section>
+
+        <section id="learn">
+            <h2>Live Greener, Starting Today.</h2>
+            <div class="grid3" id="learnCards"></div>
+            <h2>Environmental Facts You Can Trust.</h2>
+            <p class="sub">Reliable decisions depend on transparent, verifiable data. These are external references;
+                this prototype shows no live statistics.</p>
+            <ul class="pills dk" id="srcs"></ul>
+        </section>
+
+        <section id="about" class="alt">
+            <h2>A Greener Future Starts With Us.</h2>
+            <p class="sub">GO GREEN is a digital environmental awareness initiative designed to help people understand
+                environmental challenges, explore forest conservation, report environmental concerns in a prototype
+                environment, and build sustainable habits.</p>
+            <div class="grid3">
+                <div class="card">
+                    <h3>Environmental Awareness</h3>
+                </div>
+                <div class="card">
+                    <h3>Forest and Biodiversity Conservation</h3>
+                </div>
+                <div class="card">
+                    <h3>Community-Driven Green Action</h3>
+                </div>
+            </div>
+            <h3>How GO GREEN Creates Environmental Awareness.</h3>
+            <ol class="steps">
+                <li>Discover environmental concerns.</li>
+                <li>Explore sample forest fire data.</li>
+                <li>Ask EcoBot for explanations.</li>
+                <li>Create a demo environmental report.</li>
+                <li>Complete a green action challenge.</li>
+                <li>Calculate estimated environmental contributions.</li>
+            </ol>
+            <h3>Why GO GREEN?</h3>
+            <p>Interactive maps, education, local reporting demos, and gamified actions can help connect knowledge with
+                practical action. This prototype makes no claims of proven real-world outcomes.</p>
+        </section>
+    </main>
+    <footer>
+        <p><b>🍃 GO GREEN — Small Actions, Greener Future.</b></p>
+        <p><a href="#crisis">Forest Crisis</a> · <a href="#watch">ForestWatch</a> · <a href="#report">EcoReport</a> · <a
+                href="#action">Green Action</a> · <a href="#impact">EcoImpact</a></p>
+        <p>Verified external info: source links only. NASA FIRMS: hotspot data. Simulated: leaderboard, EcoBot
+            (rule-based), reports (local). Estimates: calculators.</p>
+        <p><button class="btn ghost" id="resetAll">Reset Demo Data</button> © 2026 GO GREEN — Prototype Demo</p>
+    </footer>
+    <span class="demo">Prototype Demo</span>
+
+    <button id="botBtn" aria-label="Ask EcoBot AI" title="Ask EcoBot AI">🌱</button>
+    <aside id="bot" hidden aria-label="EcoBot chat">
+        <header><b>🌱 EcoBot AI</b><small>Small questions. Greener decisions.</small><span><button id="botClear"
+                    title="Clear">🗑</button><button id="botMin" title="Minimize">–</button><button id="botX"
+                    title="Close">✕</button></span></header>
+        <div id="msgs" aria-live="polite"></div>
+        <div id="chips"></div>
+        <form id="bform"><input id="bin" placeholder="Ask about forests, climate…" aria-label="Message"
+                maxlength="300"><button class="btn">Send</button></form>
+        <small class="disc">EcoBot Prototype: Responses are generated from a curated local knowledge base. This demo is
+            not connected to a live AI model.</small>
+    </aside>
+    <dialog id="modal">
+        <h3 id="mT"></h3>
+        <div id="mB"></div><button class="btn dark" id="mX">Close</button>
+    </dialog>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>
